@@ -99,51 +99,85 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
 
         public ProducerConfig GetProducerConfig(KafkaProducerEntity entity)
         {
-            if (!AzureFunctionsFileHelper.TryGetValidFilePath(entity.Attribute.SslCertificateLocation, out var resolvedSslCertificationLocation))
-            {
-                resolvedSslCertificationLocation = entity.Attribute.SslCertificateLocation;
-            }
-
-            if (!AzureFunctionsFileHelper.TryGetValidFilePath(entity.Attribute.SslCaLocation, out var resolvedSslCaLocation))
-            {
-                resolvedSslCaLocation = entity.Attribute.SslCaLocation;
-            }
-
-            if (!AzureFunctionsFileHelper.TryGetValidFilePath(entity.Attribute.SslKeyLocation, out var resolvedSslKeyLocation))
-            {
-                resolvedSslKeyLocation = entity.Attribute.SslKeyLocation;
-            }
             var kafkaOptions = this.config.Get<KafkaOptions>();
+
+            var mergedOptions = new MergedProducerOptions(kafkaOptions, entity.Attribute);
+
+            if (!AzureFunctionsFileHelper.TryGetValidFilePath(mergedOptions.SslCertificateLocation, out var resolvedSslCertificationLocation))
+            {
+                resolvedSslCertificationLocation = mergedOptions.SslCertificateLocation;
+            }
+
+            if (!AzureFunctionsFileHelper.TryGetValidFilePath(mergedOptions.SslCaLocation, out var resolvedSslCaLocation))
+            {
+                resolvedSslCaLocation = mergedOptions.SslCaLocation;
+            }
+
+            if (!AzureFunctionsFileHelper.TryGetValidFilePath(mergedOptions.SslKeyLocation, out var resolvedSslKeyLocation))
+            {
+                resolvedSslKeyLocation = mergedOptions.SslKeyLocation;
+            }
+
             var conf = new ProducerConfig()
             {
                 BootstrapServers = this.config.ResolveSecureSetting(nameResolver, entity.Attribute.BrokerList),
-                BatchNumMessages = entity.Attribute.BatchSize,
-                EnableIdempotence = entity.Attribute.EnableIdempotence,
-                MessageSendMaxRetries = entity.Attribute.MaxRetries,
-                MessageTimeoutMs = entity.Attribute.MessageTimeoutMs,
-                RequestTimeoutMs = entity.Attribute.RequestTimeoutMs,
-                SaslPassword = this.config.ResolveSecureSetting(nameResolver, entity.Attribute.Password),
-                SaslUsername = this.config.ResolveSecureSetting(nameResolver, entity.Attribute.Username),
+                BatchNumMessages = mergedOptions.BatchSize,
+                EnableIdempotence = mergedOptions.EnableIdempotence,
+                MessageMaxBytes = mergedOptions.MaxMessageBytes,
+                MessageSendMaxRetries = mergedOptions.MaxRetries,
+                MessageTimeoutMs = mergedOptions.MessageTimeoutMs,
+                RequestTimeoutMs = mergedOptions.RequestTimeoutMs,
+                SaslPassword = this.config.ResolveSecureSetting(nameResolver, mergedOptions.Password),
+                SaslUsername = this.config.ResolveSecureSetting(nameResolver, mergedOptions.Username),
                 SslKeyLocation = resolvedSslKeyLocation,
-                SslKeyPassword = entity.Attribute.SslKeyPassword,
+                SslKeyPassword = mergedOptions.SslKeyPassword,
                 SslCertificateLocation = resolvedSslCertificationLocation,
                 SslCaLocation = resolvedSslCaLocation,
                 Debug = kafkaOptions?.LibkafkaDebug,
-                MetadataMaxAgeMs = kafkaOptions?.MetadataMaxAgeMs,
-                SocketKeepaliveEnable = kafkaOptions?.SocketKeepaliveEnable
+                MetadataMaxAgeMs = mergedOptions.MetadataMaxAgeMs,
+                SocketKeepaliveEnable = mergedOptions.SocketKeepaliveEnable,
+                CompressionLevel = mergedOptions.CompressionLevel
             };
 
-            if (entity.Attribute.AuthenticationMode != BrokerAuthenticationMode.NotSet)
+            if (mergedOptions.CompressionType != MessageCompressionType.NotSet)
             {
-                conf.SaslMechanism = (SaslMechanism)entity.Attribute.AuthenticationMode;
+                conf.CompressionType = (CompressionType)mergedOptions.CompressionType;
             }
 
-            if (entity.Attribute.Protocol != BrokerProtocol.NotSet)
+            if (mergedOptions.AuthenticationMode != BrokerAuthenticationMode.NotSet)
             {
-                conf.SecurityProtocol = (SecurityProtocol)entity.Attribute.Protocol;
+                conf.SaslMechanism = (SaslMechanism)mergedOptions.AuthenticationMode;
+            }
+
+            if (mergedOptions.Protocol != BrokerProtocol.NotSet)
+            {
+                conf.SecurityProtocol = (SecurityProtocol)mergedOptions.Protocol;
             }
 
             return conf;
+        }
+    }
+
+    public class Fallback<T>
+    {
+        private readonly T[] providers;
+
+        public Fallback(params T[] providers)
+        {
+            this.providers = providers;
+        }
+
+        public TValue GetValue<TValue>(Func<T, TValue> valueGetter, TValue defaultValue)
+        {
+            foreach (var provider in providers)
+            {
+                var value = valueGetter(provider);
+                if (value != null)
+                {
+                    return value;
+                }
+            }
+            return defaultValue;
         }
     }
 }
