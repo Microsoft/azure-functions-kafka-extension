@@ -214,7 +214,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
                     bool queueLengthIncreasing = IsTrueForLast(
                         metrics,
                         NumberOfSamplesToConsider,
-                        (prev, next) => prev.TotalLag < next.TotalLag) && metrics[0].TotalLag > 0;
+                        (prev, next) => prev.TotalLag < next.TotalLag) && metrics[0].TotalLag > (workerCount * lagThreshold);
 
                     if (queueLengthIncreasing)
                     {
@@ -253,7 +253,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
                     }                
                 }
             }
-              
+
+            if (workerCount > 1)
+            {
+                var proposedWorkerCount = workerCount - 1;
+
+                bool allSamplesBelowThreshold = IsTrueForLast(
+                    metrics,
+                    NumberOfSamplesToConsider,
+                    (prev, next) => next.TotalLag < (lagThreshold * proposedWorkerCount));
+
+                if (allSamplesBelowThreshold)
+                {
+                    status.Vote = ScaleVote.ScaleIn;
+
+                    if (this.logger.IsEnabled(LogLevel.Information))
+                    {
+                        this.logger.LogInformation("Total lag length is decreasing for topic {topicName}, for consumer group {consumerGroup}.", this.topicName, this.consumerGroup);
+                    }
+                }
+            }
+
             return status;
         }
 
