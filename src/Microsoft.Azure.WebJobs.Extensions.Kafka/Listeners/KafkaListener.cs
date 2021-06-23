@@ -163,8 +163,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
                 // Librdkafka debug options               
                 Debug = this.options.LibkafkaDebug,
 
-                // start from earliest if no checkpoint has been committed
-                AutoOffsetReset = AutoOffsetReset.Earliest,
+                // Librdkafka auto offset reset. By default set to Earliest.
+                AutoOffsetReset = this.options.AutoOffsetReset,
 
                 // Secure communication/authentication
                 SaslMechanism = this.listenerConfiguration.SaslMechanism,

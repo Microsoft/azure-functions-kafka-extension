@@ -219,6 +219,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
             }
         }
 
+        /// <summary>
+        /// Ges or sets the AutoOffsetReset option for librdkafka library.
+        ///
+        /// default: Earliest
+        /// </summary>
+        public AutoOffsetReset AutoOffsetReset { get; set; } = AutoOffsetReset.Earliest;
+        
         public string Format()
         {
             var serializerSettings = new JsonSerializerSettings()

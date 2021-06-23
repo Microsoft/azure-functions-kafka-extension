@@ -406,6 +406,58 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka.UnitTests
 
             await target.StopAsync(default);
         }
+        
+        [Fact]
+        public async Task When_Options_With_Auto_Offset_Reset_Are_Set_Should_Be_Set_In_Consumer_Config()
+        {
+            var executor = new Mock<ITriggeredFunctionExecutor>();
+            var consumer = new Mock<IConsumer<Null, string>>();
+
+            var listenerConfig = new KafkaListenerConfiguration()
+            {
+                BrokerList = "testBroker",
+                Topic = "topic",
+                ConsumerGroup = "group1",
+                SaslMechanism = SaslMechanism.Plain,
+                SaslPassword = "mypassword",
+                SaslUsername ="myusername",
+                SecurityProtocol = SecurityProtocol.SaslSsl,
+            };
+
+            var kafkaOptions = new KafkaOptions
+            {
+                AutoOffsetReset = AutoOffsetReset.Latest,
+            };
+
+            var target = new KafkaListenerForTest<Null, string>(
+                executor.Object,
+                true,
+                kafkaOptions,
+                listenerConfig,
+                requiresKey: true,
+                valueDeserializer: null,
+                NullLogger.Instance,
+                functionId: "testId"
+                );
+
+            target.SetConsumer(consumer.Object);
+
+            await target.StartAsync(default);
+
+            Assert.Equal(12, target.ConsumerConfig.Count());
+            Assert.Equal("testBroker", target.ConsumerConfig.BootstrapServers);
+            Assert.Equal("group1", target.ConsumerConfig.GroupId);
+            Assert.Equal(kafkaOptions.AutoCommitIntervalMs, target.ConsumerConfig.AutoCommitIntervalMs);
+            Assert.Equal(true, target.ConsumerConfig.EnableAutoCommit);
+            Assert.Equal(false, target.ConsumerConfig.EnableAutoOffsetStore);
+            Assert.Equal(kafkaOptions.AutoOffsetReset, target.ConsumerConfig.AutoOffsetReset);
+            Assert.Equal(SaslMechanism.Plain, target.ConsumerConfig.SaslMechanism);
+            Assert.Equal("mypassword", target.ConsumerConfig.SaslPassword);
+            Assert.Equal("myusername", target.ConsumerConfig.SaslUsername);
+            Assert.Equal(SecurityProtocol.SaslSsl, target.ConsumerConfig.SecurityProtocol);
+
+            await target.StopAsync(default);
+        }
 
         [Fact]
         public async Task When_Using_Invalid_Eventhubs_Certificate_File_Should_Fail()
