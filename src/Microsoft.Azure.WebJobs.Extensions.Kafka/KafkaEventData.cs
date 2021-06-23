@@ -21,6 +21,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
 
         object IKafkaEventData.Key => this.Key;
 
+        public string ConsumerGroup { get; internal set; }
+
         public KafkaEventData()
         {
             this.Headers = new KafkaEventDataHeaders(false);
@@ -31,8 +33,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
             this.Key = key;
             this.Value = value;
         }
-
-        public KafkaEventData(ConsumeResult<TKey, TValue> consumeResult)
+        public KafkaEventData(ConsumeResult<TKey, TValue> consumeResult) : this(consumeResult, null)
+        { 
+        }
+        public KafkaEventData(ConsumeResult<TKey, TValue> consumeResult, string consumerGroup)
         {
             this.Key = consumeResult.Key;
             this.Value = consumeResult.Value;
@@ -40,6 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
             this.Partition = consumeResult.Partition;
             this.Timestamp = consumeResult.Message.Timestamp.UtcDateTime;
             this.Topic = consumeResult.Topic;
+            this.ConsumerGroup = consumerGroup;
             if (consumeResult.Headers?.Count > 0)
             {
                 this.Headers = new KafkaEventDataHeaders(consumeResult.Message.Headers);
@@ -63,7 +68,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
 
         object IKafkaEventData.Key => null;
 
-        public IKafkaEventDataHeaders Headers { get; private set; } 
+        public IKafkaEventDataHeaders Headers { get; private set; }
+
+        public string ConsumerGroup { get; internal set; }
 
         public KafkaEventData()
         {
@@ -80,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
             this.Headers = headers;
         }
 
-        internal static KafkaEventData<TValue> CreateFrom<TKey>(ConsumeResult<TKey, TValue> consumeResult)
+        internal static KafkaEventData<TValue> CreateFrom<TKey>(ConsumeResult<TKey, TValue> consumeResult, string consumerGroup = null)
         {
             KafkaEventDataHeaders headers;
             if (consumeResult.Headers?.Count > 0)
@@ -98,7 +105,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
                 Offset = consumeResult.Offset,
                 Partition = consumeResult.Partition,
                 Timestamp = consumeResult.Timestamp.UtcDateTime,
-                Topic = consumeResult.Topic
+                Topic = consumeResult.Topic,
+                ConsumerGroup = consumerGroup
             };
 
             return result;

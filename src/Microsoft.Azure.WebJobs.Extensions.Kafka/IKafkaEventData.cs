@@ -14,5 +14,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
         string Topic { get; }
         DateTime Timestamp { get; }
         IKafkaEventDataHeaders Headers { get; }
+        string ConsumerGroup { get; }    
     }
 }
