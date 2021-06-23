@@ -15,6 +15,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
     [Binding]
     public sealed class KafkaAttribute : Attribute
     {
+        private bool? enableDeliveryReports;
+        private int? maxMessageBytes;
+
         /// <summary>
         /// Initialize a new instance of the <see cref="KafkaAttribute"/>
         /// </summary>
@@ -54,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
         /// <summary>
         /// Gets or sets the Maximum transmit message size. Default: 1MB
         /// </summary>
-        public int? MaxMessageBytes { get; set; }
+        public int MaxMessageBytes { get => maxMessageBytes.GetValueOrDefault(1000000); set => maxMessageBytes = value; }
 
         /// <summary>
         /// Maximum number of messages batched in one MessageSet. default: 10000
@@ -139,5 +142,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
         /// ssl.key.password in librdkafka
         /// </summary>
         public string SslKeyPassword { get; set; }
+
+        /// <summary>
+        /// Specifies whether to enable notification of delivery reports. Typically you should
+        /// set this parameter to true. Set it to false for "fire and forget" semantics and
+        /// a small boost in performance. default: true importance: low
+        /// </summary>
+        public bool EnableDeliveryReports { get => enableDeliveryReports.GetValueOrDefault(true); set => enableDeliveryReports = value; }
     }
 }

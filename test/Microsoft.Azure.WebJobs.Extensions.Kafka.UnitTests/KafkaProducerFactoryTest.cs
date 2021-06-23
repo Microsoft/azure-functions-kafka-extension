@@ -304,5 +304,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka.UnitTests
             Assert.Equal(sslCa.FullName, config.SslCaLocation);
             Assert.Equal(sslKeyLocation.FullName, config.SslKeyLocation);
         }
+
+        [Fact]
+        public void GetProducerConfig_Copies_Properties_From_Attribute()
+        {
+            var attribute = new KafkaAttribute("brokers:9092", "myTopic")
+            {
+                EnableDeliveryReports = false,
+                BatchSize = 123,
+                EnableIdempotence = true,
+                MaxMessageBytes = 234,
+                MaxRetries = 345,
+                MessageTimeoutMs = 456,
+                RequestTimeoutMs = 567
+            };
+
+            var entity = new KafkaProducerEntity
+            {
+                Attribute = attribute
+            };
+
+            var factory = new KafkaProducerFactory(emptyConfiguration, new DefaultNameResolver(emptyConfiguration), NullLoggerProvider.Instance);
+            var config = factory.GetProducerConfig(entity);
+
+            Assert.Equal(attribute.EnableDeliveryReports, config.EnableDeliveryReports);
+            Assert.Equal(attribute.BatchSize, config.BatchNumMessages);
+            Assert.Equal(attribute.EnableIdempotence, config.EnableIdempotence);
+            Assert.Equal(attribute.MaxMessageBytes, config.MessageMaxBytes);
+            Assert.Equal(attribute.MaxRetries, config.MessageSendMaxRetries);
+            Assert.Equal(attribute.MessageTimeoutMs, config.MessageTimeoutMs);
+            Assert.Equal(attribute.RequestTimeoutMs, config.RequestTimeoutMs);
+            Assert.Equal(attribute.EnableDeliveryReports, config.EnableDeliveryReports);
+        }
     }
 }

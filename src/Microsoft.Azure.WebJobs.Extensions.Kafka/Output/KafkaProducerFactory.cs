@@ -118,7 +118,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
             {
                 BootstrapServers = this.config.ResolveSecureSetting(nameResolver, entity.Attribute.BrokerList),
                 BatchNumMessages = entity.Attribute.BatchSize,
+                EnableDeliveryReports = entity.Attribute.EnableDeliveryReports,
                 EnableIdempotence = entity.Attribute.EnableIdempotence,
+                MessageMaxBytes = entity.Attribute.MaxMessageBytes,
                 MessageSendMaxRetries = entity.Attribute.MaxRetries,
                 MessageTimeoutMs = entity.Attribute.MessageTimeoutMs,
                 RequestTimeoutMs = entity.Attribute.RequestTimeoutMs,
